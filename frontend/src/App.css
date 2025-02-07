@@ -1,7 +1,5 @@
 #root {
-  max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
 }
 
@@ -33,10 +31,44 @@
   }
 }
 
+
+@keyframes borderAnimation {
+  0% {
+    border-image: linear-gradient(90deg, transparent, #3490dc, transparent) 1;
+  }
+  50% {
+    border-image: linear-gradient(90deg, transparent, #ff6347, transparent) 1;
+  }
+  100% {
+    border-image: linear-gradient(90deg, transparent, #3490dc, transparent) 1;
+  }
+}
+
+.animate-border {
+  animation: borderAnimation 3s infinite ease-in-out;
+  border-style: solid;
+  border-width: 2px;
+  border-image-slice: 1;
+}
+
 .card {
   padding: 2em;
 }
 
 .read-the-docs {
   color: #888;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #9810fa;
+  border-radius: 15px;
 }
