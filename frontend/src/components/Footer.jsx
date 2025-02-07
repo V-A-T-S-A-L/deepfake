@@ -2,7 +2,7 @@ import { FaGithub, FaLinkedin, FaTwitter, FaInstagram } from 'react-icons/fa';
 
 const Footer = () => {
   return (
-    <footer className="bg-gradient-to-b from-[#000] to-[#000] bg-opacity-60 backdrop-blur-3xl p-3 flex justify-center gap-8 items-center w-full">
+    <footer className="bg-[#29002c] bg-opacity-60 backdrop-blur-3xl p-3 flex justify-center gap-8 items-center w-full">
       <p className="text-sm text-white transition-all duration-300 ease-in-out transform hover:scale-105 hover:text-purple-400">
         © 2025 Veracity.AI™. All Rights Reserved.
       </p>
