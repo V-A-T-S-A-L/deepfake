@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react"; // Importing icons for the menu
+import neuron from "../assets/neuron.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,7 +9,10 @@ const Navbar = () => {
   return (
     <nav className="p-4 bg-black text-white">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to={"/"} className="text-xl font-bold text-purple-500">Veracity.AI</Link>
+        <div className="flex items-center">
+          <img className="h-8" src={neuron}></img>
+          <Link to={"/"} className="ml-2 text-xl font-bold text-purple-500">Veracity.AI</Link>
+        </div>
 
         {/* Mobile Menu Button */}
         <button
