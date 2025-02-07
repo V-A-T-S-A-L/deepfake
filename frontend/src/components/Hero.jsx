@@ -105,7 +105,7 @@ export default function Hero() {
 				</div>
 			</section>
 
-			{/* How It Works Section */}
+			{/* Pricing Section */}
 			<div className="pricing-section py-12 bg-black">
 				<h2 className="text-5xl font-extrabold text-white mb-16 tracking-wide relative">Pricing Plans</h2>
 				<div className="container mx-auto px-16 grid grid-cols-1 md:px-56 md:grid-cols-3 gap-12">
@@ -114,7 +114,7 @@ export default function Hero() {
 						altText="Kendrick Lamar - GNX Album Cover"
 						captionText="Basic Plan"
 						containerHeight="300px"
-						containerWidth="300px"
+						containerWidth=""
 						imageHeight="300px"
 						imageWidth="300px"
 						rotateAmplitude={12}
@@ -139,7 +139,7 @@ export default function Hero() {
 						altText="Kendrick Lamar - GNX Album Cover"
 						captionText="Premium Plan"
 						containerHeight="300px"
-						containerWidth="300px"
+						containerWidth=""
 						imageHeight="300px"
 						imageWidth="300px"
 						rotateAmplitude={12}
@@ -164,7 +164,7 @@ export default function Hero() {
 						altText="Kendrick Lamar - GNX Album Cover"
 						captionText="Enterprise Plan"
 						containerHeight="300px"
-						containerWidth="300px"
+						containerWidth=""
 						imageHeight="300px"
 						imageWidth="300px"
 						rotateAmplitude={12}
@@ -188,7 +188,6 @@ export default function Hero() {
 					/>
 				</div>
 			</div>
-
 			{/* Call to Action Section */}
 			<section id="contact" className="relative bg-gradient-to-b from-black to-[#340258] py-24 px-6">
 				<div className="container mx-auto text-center">
