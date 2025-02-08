@@ -52,7 +52,7 @@ export default function Hero() {
 						Our cutting-edge AI technology empowers you to identify manipulated videos and images with unparalleled accuracy.
 					</p>
 					<a
-						href="#try-it-now"
+						href="/home"
 						className="bg-purple-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-purple-700 transition duration-300 inline-block"
 					>
 						Detect Now
