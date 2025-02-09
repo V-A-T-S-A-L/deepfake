@@ -6,13 +6,13 @@ import { onAuthStateChanged } from "firebase/auth";
 
 const Dashboard = () => {
 
-	const[userName, setUserName] = useState("");
+	const [userName, setUserName] = useState("");
 	const navigate = useNavigate();
 
 	useEffect(() => {
 		const unsubscribe = onAuthStateChanged(auth, (user) => {
-			if (user) {				
-				setUserName(user.displayName)	
+			if (user) {
+				setUserName(user.displayName)
 			} else {
 				navigate("/login");
 			}
@@ -85,7 +85,8 @@ const Dashboard = () => {
 						<XAxis dataKey="date" stroke="#ddd" />
 						<YAxis stroke="#ddd" />
 						<Tooltip contentStyle={{ backgroundColor: "#333", color: "#fff" }} />
-						<Line type="monotone" dataKey="detections" stroke="#fff" strokeWidth={2} />
+						<Line type="monotone" dataKey="detections" stroke="#4CAF50" strokeWidth={2} name="Detections" />
+						<Line type="monotone" dataKey="deepfakes detected" stroke="#FF4136" strokeWidth={2} name="Deepfakes Detected" />
 					</LineChart>
 				</ResponsiveContainer>
 			</div>

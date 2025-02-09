@@ -88,21 +88,21 @@ const HomePage = () => {
     );
 
     return (
-        <div className="relative flex flex-col justify-center items-center min-h-screen p-6 mx-auto"
-        style={{
-            backgroundImage: `url(${bgimg})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-        }}
+        <div className="relative flex flex-col justify-center bg-gradient-to-r from-black to-[#340258] items-center min-h-screen p-6 mx-auto"
+        // style={{
+        //     backgroundImage: `url(${bgimg})`,
+        //     backgroundSize: "cover",
+        //     backgroundPosition: "center",
+        // }}
         >
-        <div className="inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/40 min-h-screen absolute"></div>
-            <div className="relative text-center text-white bg-purple-dark rounded-lg max-w-lg w-full sm:max-w-md sm:w-11/12 md:w-1/2">
+            <div className="inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/40 min-h-screen absolute"></div>
+            <div className="relative text-center lg:mt-10 text-white bg-purple-dark rounded-lg max-w-lg w-full sm:max-w-md sm:w-11/12 md:w-1/2">
                 <h1 className="text-4xl font-bold mb-6 text-purple-light">Veracity.AI</h1>
                 <p className="text-lg mb-4">Upload a file for deepfake detection analysis.</p>
 
                 <div className="space-y-6 backdrop-blur-sm">
                     <div
-                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging ? "border-purple-300 bg-purple-900 bg-opacity-10" : "border-purple-500"
+                        className={`border-2 border-dashed rounded-lg p-16 text-center transition-colors ${isDragging ? "border-purple-300 bg-purple-900 bg-opacity-10" : "border-purple-500"
                             }`}
                         onDragEnter={handleDragEnter}
                         onDragOver={handleDragOver}
@@ -118,7 +118,7 @@ const HomePage = () => {
                                 strokeWidth="2"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                className="mx-auto h-12 w-12 text-purple-400 mb-4"
+                                className="mx-auto h-20 w-20 text-purple-400 mb-4"
                             >
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <polyline points="17 8 12 3 7 8" />
@@ -180,8 +180,8 @@ const HomePage = () => {
                     )}
                 </div>
             </div>
-            <div className="relative mt-8 backdrop-blur-lg text-left bg-opacity-20 rounded-lg p-6 border border-purple-500 w-full sm:w-11/12 md:w-1/2 lg:w-1/3">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <div className="relative mt-8 backdrop-blur-lg bg-opacity-20 rounded-lg p-6 w-full sm:w-11/12 md:w-1/2 lg:w-1/3">
+                <h2 className="justify-center text-xl font-semibold mb-4 flex items-center">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -198,8 +198,8 @@ const HomePage = () => {
                     </svg>
                     A Friendly Heads-Up
                 </h2>
-                <ul className="space-y-3 text-purple-100">
-                    <li className="flex items-start">
+                <div className="space-y-4 text-purple-300 text-left">
+                    <div className="bg-opacity-30 p-4 rounded-lg border border-purple-500 flex items-start">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -214,11 +214,11 @@ const HomePage = () => {
                             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                         </svg>
                         <span>
-                            Our deepfake detector is pretty smart, but it's not perfect. Sometimes it might get things wrong, just like
-                            humans do!
+                            Our deepfake detector is pretty smart, but it's not perfect. Sometimes it might get things wrong, just like humans do!
                         </span>
-                    </li>
-                    <li className="flex items-start">
+                    </div>
+
+                    <div className="bg-opacity-30 p-4 rounded-lg border border-purple-500 flex items-start">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -232,11 +232,11 @@ const HomePage = () => {
                             <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
                         </svg>
                         <span>
-                            If you're using this for something important, it's a good idea to double-check the results or ask for a
-                            second opinion.
+                            If you're using this for something important, it's a good idea to double-check the results or ask for a second opinion.
                         </span>
-                    </li>
-                    <li className="flex items-start">
+                    </div>
+
+                    <div className="bg-opacity-30 p-4 rounded-lg border border-purple-500 flex items-start">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -252,9 +252,10 @@ const HomePage = () => {
                         <span>
                             Remember, technology is always improving. What's hard to detect today might be easier to spot tomorrow!
                         </span>
-                    </li>
-                </ul>
+                    </div>
+                </div>
             </div>
+
         </div>
     )
 }
