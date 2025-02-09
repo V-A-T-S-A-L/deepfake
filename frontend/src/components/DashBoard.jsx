@@ -62,7 +62,7 @@ const Dashboard = () => {
 	];
 
 	return (
-		<div className="min-h-screen bg-black text-white p-6 md:p-8 w-full">
+		<div className="min-h-screen bg-gradient-to-r from-black via-black/70 to-[#340258] text-white p-6 md:p-8 w-full">
 			<h1 className="text-purple-500 text-3xl md:text-4xl font-bold text-center mb-6">{userName} Veracity.AI Dashboard</h1>
 
 			{/* Stats Section */}

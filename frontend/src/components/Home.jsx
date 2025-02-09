@@ -3,6 +3,7 @@ import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import bgimg from "../assets/purple-cyborg.jpg";
+import RotatingText from './RotatingText'
 
 const HomePage = () => {
 
@@ -97,7 +98,22 @@ const HomePage = () => {
         >
             <div className="inset-0 bg-gradient-to-b from-black/80 via-black/50 to-black/40 min-h-screen absolute"></div>
             <div className="relative text-center lg:mt-10 text-white bg-purple-dark rounded-lg max-w-lg w-full sm:max-w-md sm:w-11/12 md:w-1/2">
-                <h1 className="text-4xl font-bold mb-6 text-purple-light">Veracity.AI</h1>
+                <h1 className="font-extrabold mb-6 text-purple-light">Veracity.AI</h1>
+                <div className="mb-15 flex mx-auto justify-center items-center">
+                    <h2 className="mr-3 text-4xl">Analyse</h2>
+                    <RotatingText
+                        texts={['Images', 'Videos', 'Audio']}
+                        mainClassName="px-2 sm:px-2 md:px-3 bg-purple-500 font-bold font-serif text-white overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
+                        staggerFrom={"last"}
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        exit={{ y: "-120%" }}
+                        staggerDuration={0.025}
+                        splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
+                        transition={{ type: "spring", damping: 30, stiffness: 400 }}
+                        rotationInterval={2000}
+                    />
+                </div>
                 <p className="text-lg mb-4">Upload a file for deepfake detection analysis.</p>
 
                 <div className="space-y-6 backdrop-blur-sm">
