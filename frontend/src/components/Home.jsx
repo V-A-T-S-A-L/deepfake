@@ -39,13 +39,32 @@ const HomePage = () => {
     const [prediction, setPrediction] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
 
-    const handleFile = useCallback((selectedFile) => {
+    const handleFile = useCallback(async (selectedFile) => {
         setFile(selectedFile);
-        // Simulate prediction (replace with actual API call in a real application)
-        setTimeout(() => {
-            const randomPrediction = Math.random() > 0.5 ? "Real" : "Deepfake";
-            setPrediction(randomPrediction);
-        }, 1500);
+        setPrediction(null); // Reset previous prediction
+
+        const formData = new FormData();
+        formData.append("image", selectedFile);
+
+        console.warn(formData);
+
+        try {
+            const response = await fetch("http://127.0.0.1:8000/api/predict/", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error("Prediction API failed");
+            }
+
+            const data = await response.json();
+            console.warn(data);
+            setPrediction(data); // Expected response: { prediction: "Real" | "Deepfake" }
+        } catch (error) {
+            console.error("Error:", error);
+            setPrediction("Error: Unable to process file");
+        }
     }, []);
 
     const handleDragEnter = useCallback((e) => {
@@ -153,9 +172,9 @@ const HomePage = () => {
                     </div>
                     {file && !prediction && <div className="text-center text-purple-300">Analyzing...</div>}
                     {prediction && (
-                        <div className={`text-center p-4 rounded-lg ${prediction === "Real" ? "bg-green-900" : "bg-red-900"}`}>
+                        <div className={`text-center p-4 rounded-lg ${prediction.result === "Real" ? "bg-green-900" : "bg-red-900"}`}>
                             <div className="flex items-center justify-center mb-2">
-                                {prediction === "Real" ? (
+                                {prediction.result === "Real" ? (
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 24 24"
@@ -185,15 +204,20 @@ const HomePage = () => {
                                         <line x1="12" y1="16" x2="12.01" y2="16" />
                                     </svg>
                                 )}
-                                <span className="text-xl font-bold">{prediction}</span>
+                                <span className="text-xl font-bold">{prediction.result}</span>
                             </div>
                             <p className="text-sm">
-                                {prediction === "Real"
+                                {prediction.result === "Real"
                                     ? "This content appears to be authentic."
                                     : "This content may be artificially generated."}
                             </p>
+                            <div className="mt-4">
+                                <p className="mb-3 text-sm text-purple-200">Confidence: {prediction.confidence.toFixed(2)}%</p>
+                                <p className="text-sm text-purple-200">Explanation: {prediction.explanation}</p>
+                            </div>
                         </div>
                     )}
+
                 </div>
             </div>
             <div className="relative mt-8 backdrop-blur-lg bg-opacity-20 rounded-lg p-6 w-full sm:w-11/12 md:w-1/2 lg:w-1/3">
