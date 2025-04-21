@@ -2,10 +2,10 @@
 # exit on error
 set -o errexit
 
-# Install system dependencies for dlib
-apt-get update && apt-get install -y cmake libgl1-mesa-glx
-
-pip install -r requirements.txt
+# Install packages in smaller groups to avoid memory issues
+pip install django django-cors-headers gunicorn whitenoise
+pip install opencv-python-headless pillow numpy matplotlib
+pip install tensorflow
 
 # collect static files
 python server/manage.py collectstatic --no-input
