@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: deepfake-detection-api
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "cd server && gunicorn server.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: DJANGO_SETTINGS_MODULE
+        value: server.settings
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+    plan: free
