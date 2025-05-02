@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { auth } from "../firebase";
+import { db, auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, getAuth } from "firebase/auth";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import bgimg from "../assets/purple-cyborg.jpg";
 import RotatingText from './RotatingText'
 
@@ -13,6 +14,7 @@ const HomePage = () => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 console.warn(user.displayName);
+                console.warn(user.uid);
             } else {
                 navigate("/login");
             }
@@ -41,11 +43,11 @@ const HomePage = () => {
     const handleFile = useCallback(async (selectedFile) => {
         setFile(selectedFile);
         setPrediction(null); // Reset previous prediction
-        
+
         // Determine file type
         const fileType = selectedFile.type.split('/')[0];
         setFileType(fileType);
-        
+
         // Create video preview URL if it's a video
         if (fileType === 'video') {
             setVideoPreview(URL.createObjectURL(selectedFile));
@@ -72,6 +74,7 @@ const HomePage = () => {
             const data = await response.json();
             console.warn(data);
             setPrediction(data);
+            submitResults(selectedFile.name, fileType, data.result, data.confidence);
         } catch (error) {
             console.error("Error:", error);
             setPrediction({
@@ -84,6 +87,28 @@ const HomePage = () => {
             setIsAnalyzing(false);
         }
     }, []);
+
+    const submitResults = async (filename, fileType, prediction, confidence) => {
+
+        const user = getAuth().currentUser;
+
+        const result = {
+            userId: user.uid,
+            filename,
+            fileType,
+            prediction,
+            confidence,
+            timestamp: serverTimestamp(),
+        };
+
+        try {
+            await addDoc(collection(db, "results"), result);
+            console.log("Result submitted successfully");
+        } catch (error) {
+            console.error("Error submitting result:", error);
+            throw error;
+        }
+    }
 
     const handleDragEnter = useCallback((e) => {
         e.preventDefault();
@@ -127,8 +152,8 @@ const HomePage = () => {
 
     // Renders the video prediction result
     const renderVideoPrediction = () => (
-        <div className={`text-center p-4 rounded-lg ${prediction.result === "Real" ? "bg-green-900" : 
-                        prediction.result === "Error" ? "bg-yellow-900" : "bg-red-900"}`}>
+        <div className={`text-center p-4 rounded-lg ${prediction.result === "Real" ? "bg-green-900" :
+            prediction.result === "Error" ? "bg-yellow-900" : "bg-red-900"}`}>
             <div className="flex items-center justify-center mb-2">
                 {prediction.result === "Real" ? (
                     <svg
@@ -257,10 +282,10 @@ const HomePage = () => {
                     {fileType === 'video' && videoPreview && (
                         <div className="mt-4">
                             <p className="text-purple-300 mb-2">Video Preview:</p>
-                            <video 
-                                src={videoPreview} 
-                                className="w-full rounded-lg" 
-                                controls 
+                            <video
+                                src={videoPreview}
+                                className="w-full rounded-lg"
+                                controls
                                 style={{ maxHeight: '200px' }}
                             />
                         </div>
@@ -287,187 +312,185 @@ const HomePage = () => {
                             {(prediction.mediaType === 'video' || fileType === 'video') && (
                                 renderVideoPrediction()
                             )}
-                            
+
                             {/* Image-specific result display with heatmap */}
                             {(prediction.mediaType === 'image' || (fileType === 'image' && prediction.heatmap)) && (
-    <div className="rounded-xl overflow-hidden shadow-2xl backdrop-blur-sm transition-all duration-300 hover:shadow-purple-500/30">
-        {/* Result banner that changes color based on result */}
-        <div 
-            className={`py-3 px-6 flex items-center justify-between ${
-                prediction.result === "Real" 
-                    ? "bg-gradient-to-r from-green-600 to-green-500" 
-                    : "bg-gradient-to-r from-red-600 to-red-500"
-            }`}
-        >
-            <div className="flex items-center space-x-3">
-                {prediction.result === "Real" ? (
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="text-white w-8 h-8"
-                    >
-                        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
-                    </svg>
-                ) : prediction.result === "Error" ? (
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="text-white w-8 h-8"
-                    >
-                        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
-                    </svg>
-                ) : (
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="text-white w-8 h-8"
-                    >
-                        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
-                    </svg>
-                )}
-                <span className="text-2xl font-bold text-white">
-                    {prediction.result === "Real" ? "Authentic Content" : "Potentially AI-Generated"}
-                </span>
-            </div>
-            
-            <div className="flex items-center bg-black/30 px-3 py-1 rounded-full">
-                <span className="mr-2 text-white font-medium">Confidence:</span>
-                <span className={`font-bold ${prediction.result === "Real" ? "text-green-300" : "text-red-300"}`}>
-                    {prediction.confidence.toFixed(2)}%
-                </span>
-            </div>
-        </div>
+                                <div className="rounded-xl overflow-hidden shadow-2xl backdrop-blur-sm transition-all duration-300 hover:shadow-purple-500/30">
+                                    {/* Result banner that changes color based on result */}
+                                    <div
+                                        className={`py-3 px-6 flex items-center justify-between ${prediction.result === "Real"
+                                            ? "bg-gradient-to-r from-green-600 to-green-500"
+                                            : "bg-gradient-to-r from-red-600 to-red-500"
+                                            }`}
+                                    >
+                                        <div className="flex items-center space-x-3">
+                                            {prediction.result === "Real" ? (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24"
+                                                    fill="currentColor"
+                                                    className="text-white w-8 h-8"
+                                                >
+                                                    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                                                </svg>
+                                            ) : prediction.result === "Error" ? (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24"
+                                                    fill="currentColor"
+                                                    className="text-white w-8 h-8"
+                                                >
+                                                    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                                                </svg>
+                                            ) : (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24"
+                                                    fill="currentColor"
+                                                    className="text-white w-8 h-8"
+                                                >
+                                                    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
+                                            <span className="text-2xl font-bold text-white">
+                                                {prediction.result === "Real" ? "Authentic Content" : "Potentially AI-Generated"}
+                                            </span>
+                                        </div>
 
-        <div className="bg-gradient-to-b from-purple-900/40 to-blue-900/40 p-6">
-            <div className="grid md:grid-cols-2 gap-8">
-                {/* Left column - Image and confidence */}
-                <div className="space-y-6">
-                    <div className="relative group rounded-lg overflow-hidden ring-2 ring-purple-500/50 shadow-xl">
-                        {/* Animated glow effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-blue-600/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
-                        
-                        {/* Glass container for image */}
-                        <div className="relative backdrop-blur-sm bg-black/50 p-2 rounded-lg">
-                            <img
-                                src={prediction.heatmap.startsWith('data:')
-                                    ? prediction.heatmap
-                                    : `data:image/jpeg;base64,${prediction.heatmap}`}
-                                alt="Analysis Heatmap"
-                                className="w-full rounded-md transition-transform duration-500 group-hover:scale-105"
-                            />
-                            
-                            {/* Floating badge */}
-                            <div className="absolute -bottom-1 -right-1 bg-purple-600 text-white text-xs px-3 py-1 rounded-tl-lg rounded-br-lg font-medium shadow-lg">
-                                Heatmap Analysis
-                            </div>
-                        </div>
-                    </div>
+                                        <div className="flex items-center bg-black/30 px-3 py-1 rounded-full">
+                                            <span className="mr-2 text-white font-medium">Confidence:</span>
+                                            <span className={`font-bold ${prediction.result === "Real" ? "text-green-300" : "text-red-300"}`}>
+                                                {prediction.confidence.toFixed(2)}%
+                                            </span>
+                                        </div>
+                                    </div>
 
-                    <div className="relative">
-                        <div className="flex justify-between items-center mb-2">
-                            <p className="text-sm text-purple-200 font-medium">Confidence Level</p>
-                            <div className="flex items-center">
-                                <div className={`h-3 w-3 rounded-full mr-2 ${prediction.result === "Real" ? "bg-green-500" : "bg-red-500"}`}></div>
-                                <p className="text-sm font-bold">
-                                    {prediction.confidence.toFixed(2)}%
-                                </p>
-                            </div>
-                        </div>
-                        
-                        {/* Glass effect progress bar container */}
-                        <div className="w-full h-4 rounded-full bg-black/50 backdrop-blur-sm p-1">
-                            <div
-                                className={`h-2 rounded-full transition-all duration-1000 ease-out ${
-                                    prediction.result === "Real" 
-                                        ? "bg-gradient-to-r from-green-500 to-emerald-400" 
-                                        : "bg-gradient-to-r from-red-500 to-orange-400"
-                                }`}
-                                style={{ width: `${prediction.confidence.toFixed(2)}%` }}
-                            >
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                    <div className="bg-gradient-to-b from-purple-900/40 to-blue-900/40 p-6">
+                                        <div className="grid md:grid-cols-2 gap-8">
+                                            {/* Left column - Image and confidence */}
+                                            <div className="space-y-6">
+                                                <div className="relative group rounded-lg overflow-hidden ring-2 ring-purple-500/50 shadow-xl">
+                                                    {/* Animated glow effect */}
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-blue-600/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
 
-                {/* Right column - Explanation */}
-                <div className="bg-black/40 backdrop-blur-md p-5 rounded-xl border border-purple-500/30 shadow-lg">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center border-b border-purple-500/30 pb-3">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            className="w-5 h-5 mr-2 text-purple-400"
-                        >
-                            <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
-                        </svg>
-                        Analysis Details
-                    </h3>
+                                                    {/* Glass container for image */}
+                                                    <div className="relative backdrop-blur-sm bg-black/50 p-2 rounded-lg">
+                                                        <img
+                                                            src={prediction.heatmap.startsWith('data:')
+                                                                ? prediction.heatmap
+                                                                : `data:image/jpeg;base64,${prediction.heatmap}`}
+                                                            alt="Analysis Heatmap"
+                                                            className="w-full rounded-md transition-transform duration-500 group-hover:scale-105"
+                                                        />
 
-                    <div className="prose prose-sm prose-invert max-w-none mb-6">
-                        <p className="text-gray-200 leading-relaxed">{prediction.explanation}</p>
-                    </div>
+                                                        {/* Floating badge */}
+                                                        <div className="absolute -bottom-1 -right-1 bg-purple-600 text-white text-xs px-3 py-1 rounded-tl-lg rounded-br-lg font-medium shadow-lg">
+                                                            Heatmap Analysis
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                    <div className="mt-6 space-y-4">
-                        <h4 className="text-sm font-medium flex items-center text-purple-300 mb-2">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                                className="w-4 h-4 mr-2 text-purple-400"
-                            >
-                                <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
-                            </svg>
-                            What to look for in the heatmap:
-                        </h4>
-                        
-                        <ul className="text-sm text-left text-gray-300 space-y-2 pl-4">
-                            <li className="flex items-start">
-                                <div className="bg-purple-500/20 p-1 rounded mr-2 mt-0.5">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-purple-400">
-                                        <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
-                                        <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                                    </svg>
+                                                <div className="relative">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <p className="text-sm text-purple-200 font-medium">Confidence Level</p>
+                                                        <div className="flex items-center">
+                                                            <div className={`h-3 w-3 rounded-full mr-2 ${prediction.result === "Real" ? "bg-green-500" : "bg-red-500"}`}></div>
+                                                            <p className="text-sm font-bold">
+                                                                {prediction.confidence.toFixed(2)}%
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Glass effect progress bar container */}
+                                                    <div className="w-full h-4 rounded-full bg-black/50 backdrop-blur-sm p-1">
+                                                        <div
+                                                            className={`h-2 rounded-full transition-all duration-1000 ease-out ${prediction.result === "Real"
+                                                                ? "bg-gradient-to-r from-green-500 to-emerald-400"
+                                                                : "bg-gradient-to-r from-red-500 to-orange-400"
+                                                                }`}
+                                                            style={{ width: `${prediction.confidence.toFixed(2)}%` }}
+                                                        >
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Right column - Explanation */}
+                                            <div className="bg-black/40 backdrop-blur-md p-5 rounded-xl border border-purple-500/30 shadow-lg">
+                                                <h3 className="text-lg font-semibold mb-4 flex items-center border-b border-purple-500/30 pb-3">
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 24 24"
+                                                        fill="currentColor"
+                                                        className="w-5 h-5 mr-2 text-purple-400"
+                                                    >
+                                                        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                                                    </svg>
+                                                    Analysis Details
+                                                </h3>
+
+                                                <div className="prose prose-sm prose-invert max-w-none mb-6">
+                                                    <p className="text-gray-200 leading-relaxed">{prediction.explanation}</p>
+                                                </div>
+
+                                                <div className="mt-6 space-y-4">
+                                                    <h4 className="text-sm font-medium flex items-center text-purple-300 mb-2">
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            viewBox="0 0 24 24"
+                                                            fill="currentColor"
+                                                            className="w-4 h-4 mr-2 text-purple-400"
+                                                        >
+                                                            <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 010 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 01-1.422 0l-.395-1.183a1.5 1.5 0 00-.948-.948l-1.183-.395a.75.75 0 010-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0116.5 15z" clipRule="evenodd" />
+                                                        </svg>
+                                                        What to look for in the heatmap:
+                                                    </h4>
+
+                                                    <ul className="text-sm text-left text-gray-300 space-y-2 pl-4">
+                                                        <li className="flex items-start">
+                                                            <div className="bg-purple-500/20 p-1 rounded mr-2 mt-0.5">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-purple-400">
+                                                                    <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                                                                    <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                                                </svg>
+                                                            </div>
+                                                            Bright areas show regions the AI focused on when making its decision
+                                                        </li>
+                                                        <li className="flex items-start">
+                                                            <div className="bg-purple-500/20 p-1 rounded mr-2 mt-0.5">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-purple-400">
+                                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                                                </svg>
+                                                            </div>
+                                                            In fake images, artifacts around edges and unnatural textures are highlighted
+                                                        </li>
+                                                        <li className="flex items-start">
+                                                            <div className="bg-purple-500/20 p-1 rounded mr-2 mt-0.5">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-purple-400">
+                                                                    <path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                                                                </svg>
+                                                            </div>
+                                                            In real images, natural facial features receive more balanced attention
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-8 text-center">
+                                            <button
+                                                onClick={() => window.location.reload()}
+                                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/30 flex items-center mx-auto"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 mr-2">
+                                                    <path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm15.408 3.352a.75.75 0 00-.919.53 7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-.53-.918z" clipRule="evenodd" />
+                                                </svg>
+                                                Analyze Another Image
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                Bright areas show regions the AI focused on when making its decision
-                            </li>
-                            <li className="flex items-start">
-                                <div className="bg-purple-500/20 p-1 rounded mr-2 mt-0.5">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-purple-400">
-                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                In fake images, artifacts around edges and unnatural textures are highlighted
-                            </li>
-                            <li className="flex items-start">
-                                <div className="bg-purple-500/20 p-1 rounded mr-2 mt-0.5">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-purple-400">
-                                        <path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                In real images, natural facial features receive more balanced attention
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div className="mt-8 text-center">
-                <button
-                    onClick={() => window.location.reload()}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/30 flex items-center mx-auto"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 mr-2">
-                        <path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm15.408 3.352a.75.75 0 00-.919.53 7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-.53-.918z" clipRule="evenodd" />
-                    </svg>
-                    Analyze Another Image
-                </button>
-            </div>
-        </div>
-    </div>
-)}
+                            )}
                         </>
                     )}
                 </div>

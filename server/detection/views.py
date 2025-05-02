@@ -182,52 +182,73 @@ def extract_frames_opencv(video_path, num_frames=30):
     
     return frames
 
-def classify_video(video_path):
+def generate_frame_heatmap(frame_rgb, model, last_conv_layer_name="conv2d_2"):
     try:
-        # Extract exactly 30 frames from the video (as expected by the model)
-        frames = extract_frames_opencv(video_path, num_frames=30)
+        img = cv2.resize(frame_rgb, (128, 128)) / 255.0
+        img_array = np.expand_dims(img, axis=0)
+
+        # Find last conv layer
+        for layer in reversed(model.layers):
+            if 'conv' in layer.name.lower():
+                target_layer = layer
+                break
+
+        activation_model = Model(inputs=model.inputs, outputs=target_layer.output)
+        activations = activation_model.predict(img_array)
         
+        heatmap = np.mean(activations[0], axis=-1)
+        heatmap = np.maximum(heatmap, 0)
+        heatmap = heatmap / np.max(heatmap) if np.max(heatmap) > 0 else heatmap
+        heatmap = cv2.resize(heatmap, (128, 128))
+        heatmap = np.uint8(255 * heatmap)
+        heatmap_color = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+
+        original = cv2.resize(cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR), (128, 128))
+
+        # Convert both images to float32 before blending
+        original = original.astype(np.float32)
+        heatmap_color = heatmap_color.astype(np.float32)
+
+        superimposed = cv2.addWeighted(original, 0.6, heatmap_color, 0.4, 0)
+
+        # Convert back to uint8 for display/storage
+        superimposed = np.uint8(superimposed)
+
+        return superimposed
+    except Exception as e:
+        print(f"Heatmap error: {e}")
+        return cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+
+
+
+def classify_video(video_path, return_frames=False):
+    try:
+        frames = extract_frames_opencv(video_path, num_frames=30)
         if len(frames) == 0:
-            return "Error", 0, "Could not extract frames from video"
-            
-        # Extract features for each frame using InceptionV3
+            return "Error", 0, "Could not extract frames", []
+
         features = []
         for frame in frames:
             frame_expanded = np.expand_dims(frame, axis=0)
             feature = feature_extractor.predict(frame_expanded)
-            features.append(feature[0])  # shape will be (2048,)
+            features.append(feature[0])
         
-        # Stack features into a sequence of shape (30, 2048)
-        feature_sequence = np.stack(features)
-        # Expand dimensions to get shape (1, 30, 2048) for batch size 1
-        feature_sequence = np.expand_dims(feature_sequence, axis=0)
-        
-        # Make prediction with the video model
+        feature_sequence = np.expand_dims(np.stack(features), axis=0)
         prediction = video_model.predict(feature_sequence)
-        
-        # Process prediction result
-        if isinstance(prediction, list):
-            prediction = prediction[0]  # Get first element if it's a list
-        
-        # Determine result based on prediction value
-        # Assuming binary classification with threshold 0.5
         avg_prediction = prediction[0] if prediction.shape == (1, 1) else np.mean(prediction)
+        
         result = 'Fake' if avg_prediction > 0.5 else 'Real'
         confidence = avg_prediction * 100 if result == 'Fake' else (1 - avg_prediction) * 100
-        
-        explanation = ""
-        if result == 'Real':
-            explanation = "The video appears to be authentic. No significant inconsistencies detected across frames."
+        explanation = "The video appears to be fake." if result == 'Fake' else "The video appears to be authentic."
+
+        if return_frames:
+            return result, confidence, explanation, frames
         else:
-            explanation = "The video appears to be fake. Possible inconsistencies detected in facial movements, lighting, or temporal coherence."
-        
-        return result, confidence, explanation
-    
+            return result, confidence, explanation
+
     except Exception as e:
-        print(f"Error in classify_video: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return "Error", 0, f"Error processing video: {str(e)}"
+        return "Error", 0, f"Error processing video: {str(e)}", []
+
 
 @csrf_exempt
 def predict(request):
@@ -242,16 +263,23 @@ def predict(request):
         
         try:
             if file_extension in ['.mp4', '.avi', '.mov', '.wmv']:
-                # Process as video
-                result, confidence, explanation = classify_video(file_path_full)
+                # Process video with frames returned
+                result, confidence, explanation, frames = classify_video(file_path_full, return_frames=True)
                 media_type = "video"
-                
-                # Video response doesn't include heatmap
+
+                # Generate heatmaps for the first few frames (e.g. first 5 for response)
+                heatmaps_b64 = []
+                for i, frame in enumerate(frames[:5]):
+                    heatmap = generate_frame_heatmap(frame, model)
+                    _, buffer = cv2.imencode('.jpg', heatmap)
+                    heatmaps_b64.append(base64.b64encode(buffer).decode('utf-8'))
+
                 response_data = {
-                    "result": result, 
-                    "confidence": float(confidence), 
+                    "result": result,
+                    "confidence": float(confidence),
                     "explanation": explanation,
-                    "mediaType": media_type
+                    "mediaType": media_type,
+                    "heatmaps": heatmaps_b64  # Add heatmaps as base64 strings
                 }
             else:
                 # Process as image

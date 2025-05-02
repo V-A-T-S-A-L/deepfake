@@ -8,6 +8,7 @@ import Signup from './components/Signup'
 import Login from './components/Login'
 import DashBoard from './components/DashBoard'
 import HomePage from './components/Home'
+import DevTools from './components/DevTools'
 
 function App() {
 
@@ -21,6 +22,7 @@ function App() {
 				<Route path="/login" element={<Login />} />
 				<Route path="/dashboard" element={<DashBoard />} />
 				<Route path="/home" element={<HomePage />}/>
+				<Route path="/devtools" element={<DevTools />}/>
 			</Routes>
 			<Footer />
 		</Router>
